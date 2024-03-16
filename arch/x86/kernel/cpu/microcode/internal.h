@@ -120,11 +120,7 @@ void load_ucode_intel_bsp(struct early_load_data *ed);
 void load_ucode_intel_ap(void);
 void reload_ucode_intel(void);
 struct microcode_ops *init_intel_microcode(void);
-static inline bool staging_work(u64 mmio_pa, void *ucode_ptr, unsigned int totalsize)
-{
-	pr_debug_once("Need to implement the Staging code.\n");
-	return false;
-}
+bool staging_work(u64 mmio_pa, void *ucode_ptr, unsigned int totalsize);
 #else /* CONFIG_CPU_SUP_INTEL */
 static inline void load_ucode_intel_bsp(struct early_load_data *ed) { }
 static inline void load_ucode_intel_ap(void) { }
