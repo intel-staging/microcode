@@ -120,11 +120,18 @@ void load_ucode_intel_bsp(struct early_load_data *ed);
 void load_ucode_intel_ap(void);
 void reload_ucode_intel(void);
 struct microcode_ops *init_intel_microcode(void);
+static inline enum ucode_state do_stage(u64 pa, void *ucode_ptr, unsigned int totalsize)
+{
+	pr_debug_once("Need to implement the staging code.\n");
+	return UCODE_ERROR;
+}
 #else /* CONFIG_CPU_SUP_INTEL */
 static inline void load_ucode_intel_bsp(struct early_load_data *ed) { }
 static inline void load_ucode_intel_ap(void) { }
 static inline void reload_ucode_intel(void) { }
 static inline struct microcode_ops *init_intel_microcode(void) { return NULL; }
+static inline enum ucode_state
+do_stage(u64 pa, void *ucode_ptr, unsigned int totalsize) { return UCODE_ERROR; }
 #endif  /* !CONFIG_CPU_SUP_INTEL */
 
 #endif /* _X86_MICROCODE_INTERNAL_H */
