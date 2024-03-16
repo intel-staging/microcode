@@ -676,19 +676,27 @@ static bool setup_cpus(void)
 
 static int load_late_locked(void)
 {
+	bool is_safe = false;
+
 	if (!setup_cpus())
 		return -EBUSY;
 
 	switch (microcode_ops->request_microcode_fw(0, &microcode_pdev->dev)) {
 	case UCODE_NEW:
-		return load_late_stop_cpus(false);
+		break;
 	case UCODE_NEW_SAFE:
-		return load_late_stop_cpus(true);
+		is_safe = true;
+		break;
 	case UCODE_NFOUND:
 		return -ENOENT;
 	default:
 		return -EBADFD;
 	}
+
+	if (microcode_ops->use_staging)
+		microcode_ops->staging_microcode();
+
+	return load_late_stop_cpus(is_safe);
 }
 
 static ssize_t reload_store(struct device *dev,
