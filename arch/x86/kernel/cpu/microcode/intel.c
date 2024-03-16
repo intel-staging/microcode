@@ -299,6 +299,55 @@ static __init struct microcode_intel *scan_microcode(void *data, size_t size,
 	return size ? NULL : patch;
 }
 
+static inline u64 staging_addr(u32 cpu)
+{
+	u32 lo, hi;
+
+	rdmsr_on_cpu(cpu, MSR_IA32_MCU_STAGING_MBOX_ADDR, &lo, &hi);
+	return lo | ((u64)hi << 32);
+}
+
+static bool need_staging(u64 *mmio_addrs, u64 pa)
+{
+	unsigned int i;
+
+	for (i = 0; mmio_addrs[i] != 0; i++) {
+		if (mmio_addrs[i] == pa)
+			return false;
+	}
+	mmio_addrs[i] = pa;
+	return true;
+}
+
+static void staging_microcode(void)
+{
+	u64 *mmio_addrs, mmio_pa;
+	unsigned int totalsize;
+	int cpu;
+
+	totalsize = get_totalsize(&ucode_patch_late->hdr);
+	if (!IS_ALIGNED(totalsize, sizeof(u32)))
+		return;
+
+	mmio_addrs = kcalloc(nr_cpu_ids, sizeof(*mmio_addrs), GFP_KERNEL);
+	if (WARN_ON_ONCE(!mmio_addrs))
+		return;
+
+	for_each_cpu(cpu, cpu_online_mask) {
+		mmio_pa = staging_addr(cpu);
+
+		if (need_staging(mmio_addrs, mmio_pa) &&
+		    !staging_work(mmio_pa, ucode_patch_late, totalsize)) {
+			pr_err("Error: staging failed.\n");
+			goto out;
+		}
+	}
+
+	pr_info("Staging succeeded.\n");
+out:
+	kfree(mmio_addrs);
+}
+
 static enum ucode_state __apply_microcode(struct ucode_cpu_info *uci,
 					  struct microcode_intel *mc,
 					  u32 *cur_rev)
@@ -627,6 +676,7 @@ static struct microcode_ops microcode_intel_ops = {
 	.collect_cpu_info	= collect_cpu_info,
 	.apply_microcode	= apply_microcode_late,
 	.finalize_late_load	= finalize_late_load,
+	.staging_microcode	= staging_microcode,
 	.use_nmi		= IS_ENABLED(CONFIG_X86_64),
 };
 
