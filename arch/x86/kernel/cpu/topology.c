@@ -416,7 +416,6 @@ void topology_hotunplug_apic(unsigned int cpu)
 }
 #endif
 
-#ifdef CONFIG_X86_LOCAL_APIC
 static unsigned int max_possible_cpus __initdata = NR_CPUS;
 
 /**
@@ -569,4 +568,3 @@ static int __init setup_possible_cpus(char *str)
 	return 0;
 }
 early_param("possible_cpus", setup_possible_cpus);
-#endif
